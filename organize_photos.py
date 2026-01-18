@@ -4,7 +4,7 @@ Photo Folder Manager Script
 
 DESCRIPTION:
 This script organizes photo directories by:
-1. Converting HEIC files to JPG and moving the original HEIC files to a 'heic/' subfolder.
+1. Converting HEIC files to JPG (PRESERVING EXIF DATA) and moving the original HEIC files to a 'heic/' subfolder.
 2. Moving MOV files to a 'mov/' subfolder.
 3. Moving MP4/MPG files to a 'mp4/' subfolder.
 
@@ -130,11 +130,24 @@ def process_directory(current_path, quality=95):
                 
                 if not os.path.exists(jpg_path):
                     try:
-                        print(f"  [Convert] {entry.name} -> {base_name}.jpg")
+                        print(f"  [Convert] {entry.name} -> {base_name}.jpg (Preserving EXIF)")
                         img = Image.open(file_path)
+                        
+                        # Extract EXIF data before conversion
+                        exif_data = img.info.get("exif")
+
                         if img.mode in ("RGBA", "P"):
                             img = img.convert("RGB")
-                        img.save(jpg_path, "JPEG", quality=quality)
+                        
+                        # Save kwargs dictionary
+                        save_kwargs = {'quality': quality}
+                        
+                        # Only add exif argument if data exists to avoid errors
+                        if exif_data:
+                            save_kwargs['exif'] = exif_data
+                            
+                        img.save(jpg_path, "JPEG", **save_kwargs)
+                        
                     except Exception as e:
                         print(f"  [Error] Failed to convert {entry.name}: {e}")
                         continue
